@@ -48,7 +48,7 @@ $$
 y = X\beta + \epsilon
 $$
 
-This is not yet a probability model. To express it as a probability model, we make an assumption about the distribution of the residuals. We'll start by assuming they're normally distributed $\epsilon \sim \mathcal{N}(0, \sigma)$, where $\sigma$ is another parmeter--the standard deviation of the residuals. 
+This is not yet a probability model. To express it as a probability model, we make an assumption about the distribution of the residuals and parameters. We'll start by assuming the residuals are normally distributed $\epsilon \sim \mathcal{N}(0, \sigma)$, where $\sigma$ is another parmeter--the standard deviation of the residuals. 
 
 Once we have made this distributional assumption, we can use it to express the linear model above in probability notation.
 
@@ -73,6 +73,20 @@ If we assume that the prior distributions of $\beta$ and $\sigma$ are independen
 $$
 p(\beta, \sigma | y, X) \propto p(y | \beta, \sigma, X)\times p(\beta)\times p(\sigma)
 $$
+
+
+### Side-note on likelihood
+
+This section contains an explanation of likelihood; feel free to skip over if you feel comfortable with the concept already. 
+
+The term $p(y | \beta, \sigma)$ is the *likelihood*. It is the conditional probability of observing the data $y$ given that the parameters $\theta = \{\beta, \sigma\}$ and our model are "true". A different set of parameters will in general result in a different likelihood. 
+
+
+
+
+To calculate the likelihood we must also make an assumption that each $\epsilon_{i}$ is independent of all other draws. This is equivalent to saying that a draw from $y$, $y_{i}$ is independent of other draws $y_{j}$ after we account for the differences between $X_{i}$ and $X_{j}$. After making this independence assumption, then the  a and is calculated as the product of the liklihood contributions of all observations $y_{i}$, $\prod_{i} p(y_{i}| \beta, \sigma)$. What do these likelihood contributions mean? 
+
+Say 
 
 We already made a modelling assumption about $p(y | \beta, \sigma, X)$--it is our data model $\mathcal{N}(X_{i}\beta, \sigma)$. Now we just need to specify priors for the parameters $\beta$ and $\sigma$. 
 
@@ -229,7 +243,7 @@ compiled_model <- stan_model(model_code = model_string)
 
 Finally, we run the script above to generate some plausible values for $\hat{y}$. The output below summarises the "draws" of $\hat{y}$ just as it would parameter estimates from the model. The reason for this will be apparent later on. 
 
-```{r, cache = T, message = F, echo = F}
+```{r, cache = T, message = F, echo = T}
 simulated_values <- sampling(compiled_model, data = data_list, iter = 1, chains = 1,algorithm = "Fixed_param")
 simulated_values
 
@@ -239,6 +253,7 @@ We can turn this somewhat strange data format into something more useable like s
 
 ```{r, cache = T, message = F}
 yhat <- plyr::ldply(extract(simulated_values, pars = "yhat", permuted = F))$V1
+
 ```
 
 
@@ -340,4 +355,4 @@ print(correct_fit, pars = c("beta", "sigma", "nu"))
 
 Notice that the parameter estimates printed above are in the same format as the simulated data above? When we call `print()` on a `stanfit` object, it generates some summary statistics for all parameters *and generated quantities*. In Markov Chain Monte Carlo MCMC methods, the posterior distribution $p(\theta|y)$ is estimated by generating a large number of draws from the distribution (there is no analytical form from which to calculate the relevant statistics). For each draw of the parameters, values in the `generated quantities` block are created. That is, in each iteration we generate values in the generated quantities block that make use of different parameter estimates. Once we have a large number of draws from the distribution, we can calculate relevant statistics of those draws (`print()` returns mean, standard deviation, and quantiles). But we also want to know if those draws are reliable. 
 
-The `print()` method calculates a couple more useful statistics to help us know when the estimates are unreliable. First is `n_eff`. This tells us the effective number of *independent draws* that we have. Some MCMC algorithms (like Gibbs sampling or Metropolis Hastings, which Stan *does not* implement) are prone to drawing serially correlated estimates of the parameters---one iteration's estimates are highly dependent on the previous iteration's. When this happens, we can't trust the estimates. 
+The `print()` method calculates a couple more useful statistics to help us know when the estimates are unreliable. First is `n_eff`. This tells us the effective number of *independent draws* that we have. Some MCMC algorithms (like Gibbs sampling or Metropolis Hastings, which Stan *does not* implement) are prone to drawing serially correlated estimates of the parameters---one iteration's estimates are highly dependent on the previous iteration's. When this happens, the 
